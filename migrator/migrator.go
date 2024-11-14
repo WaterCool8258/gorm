@@ -306,6 +306,17 @@ func (m Migrator) CreateTable(values ...interface{}) error {
 				createTableSQL += fmt.Sprint(tableOption)
 			}
 
+			instanceType := reflect.TypeOf(value)
+			// 查找方法
+			if method, exists := instanceType.MethodByName("TableComment"); exists {
+				instanceValue := reflect.ValueOf(value)
+				result := method.Func.Call([]reflect.Value{instanceValue})
+				if len(result) > 0 {
+					comment := result[0].Interface().(string)
+					createTableSQL += fmt.Sprintf(" COMMENT='%s'", comment)
+				}
+			}
+
 			err = tx.Exec(createTableSQL, values...).Error
 			return err
 		}); err != nil {
